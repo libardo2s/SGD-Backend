@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 import os
-
 import jwt
+import uuid
+
+# DJANGO
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+
+# RESTFRAMEWORK
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -69,7 +73,6 @@ class PropietarioAPi(APIView):
         }
         return Response(response, status=status.HTTP_200_OK)
 
-    @csrf_exempt
     def post(self, request, format=None):
         documento = request.data.get('documento')
         nombres = request.data.get('nombres')
@@ -84,7 +87,7 @@ class PropietarioAPi(APIView):
         try:
             prop = Propietario.objects.filter(persona__numero_documento=documento)
             if len(prop) == 0:
-                vialprop= Propietario.objects.filter(vial=vial)
+                vialprop = Propietario.objects.filter(vial=vial)
                 if len(vialprop) == 0:
                     propietario = Propietario()
                     persona = Persona()
@@ -100,8 +103,7 @@ class PropietarioAPi(APIView):
                     propietario.fecha_cumpleanos = fecha
                     propietario.vial = vial
                     propietario.save()
-                    list = []
-                    list.append(propietario)
+                    list = [propietario]
                     propietario_seriealizer = PropietarioSerializer(list, many=True)
                     response = {
                         'content': propietario_seriealizer.data,
@@ -122,6 +124,33 @@ class PropietarioAPi(APIView):
                     'message': 'El propietario ya se encuentra registrado'
                 }
                 return Response(response, status=status.HTTP_200_OK)
+        except Exception as e:
+            response = {
+                'content': [],
+                'isOk': False,
+                'message': str(e)
+            }
+            return Response(response, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk, format=None):
+        try:
+            propietario_list = Propietario.objects.filter(persona__numero_documento=pk)
+            propietario = propietario_list[0]
+            propietario.activo = False
+            propietario.save()
+            response = {
+                'content': [],
+                'isOk': True,
+                'message': 'Propietario eliminado correctamente'
+            }
+            return Response(response, status=status.HTTP_200_OK)
+        except Propietario.DoesNotExist:
+            response = {
+                'content': [],
+                'isOk': False,
+                'message': 'Propietario no encontrado'
+            }
+            return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
             response = {
                 'content': [],
@@ -161,7 +190,6 @@ class PropietarioUpdateAPi(APIView):
             }
             return Response(response, status=status.HTTP_200_OK)
 
-    @csrf_exempt
     def post(self, request, format=None):
         documento = request.data.get('documento_select')
         nombres = request.data.get('nombres_select')
@@ -235,7 +263,6 @@ class VehiculoApi(APIView):
             }
         return Response(response, status=status.HTTP_200_OK)
 
-    @csrf_exempt
     def post(self, request, format=None):
         prop = request.data.get('propietario')
         d_placa = request.data.get('placa')
@@ -325,8 +352,6 @@ class VehiculoUpdateApi(APIView):
             }
             return Response(response, status=status.HTTP_200_OK)
 
-
-    @csrf_exempt
     def post(self, request, format=None):
         propietario_doc = request.data.get('propietario')
         vehiculo_id = request.data.get('id')
@@ -381,7 +406,7 @@ class VehiculoUpdateApi(APIView):
                 'message': 'Propietario no encontrado'
             }
             return Response(response, status=status.HTTP_200_OK)
-        except Exception as e :
+        except Exception as e:
             response = {
                 'content': [],
                 'isOk': False,
@@ -392,8 +417,7 @@ class VehiculoUpdateApi(APIView):
 
 class VinculacionApi(APIView):
     def get(self, request, format=None):
-
-        lista_vinculaciones = VinculacionVehiculo.objects.all()
+        lista_vinculaciones = VinculacionVehiculo.objects.filter(activo=True)
         serializer_vinculacion = VinculacionSerializer(lista_vinculaciones, many=True)
         response = {
             'content': serializer_vinculacion.data,
@@ -402,9 +426,75 @@ class VinculacionApi(APIView):
         }
         return Response(response, status=status.HTTP_200_OK)
 
-    @csrf_exempt
     def post(self, request, format=None):
-        pass
+        # print(request.data)
+        try:
+            vehiculo_id = request.data.get('id_vehiculo')
+            radicado = random_string()
+
+            vinculacion = VinculacionVehiculo.objects.filter(vehiculo__id=vehiculo_id)
+            if len(vinculacion) == 0:
+                vehiculo = Vehiculo.objects.get(id=vehiculo_id)
+                vinculacion = VinculacionVehiculo.objects.create(radicado=radicado, vehiculo=vehiculo)
+                list = [vinculacion]
+                serializer_vinculacion = VinculacionSerializer(list, many=True)
+                response = {
+                    'content': serializer_vinculacion.data,
+                    'isOk': True,
+                    'message': 'Vehículo vinculado correctamente'
+                }
+                return Response(response, status=status.HTTP_200_OK)
+            elif not vinculacion[0].activo:
+                vinculacion[0].activo = True
+                vinculacion[0].save()
+                serializer_vinculacion = VinculacionSerializer(vinculacion, many=True)
+                response = {
+                    'content': serializer_vinculacion.data,
+                    'isOk': True,
+                    'message': 'Vinculación activa'
+                }
+                return Response(response, status=status.HTTP_200_OK)
+            else:
+                response = {
+                    'content': [],
+                    'isOk': False,
+                    'message': 'Vehículo no encontrado'
+                }
+                return Response(response, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            response = {
+                'content': str(e),
+                'isOk': False,
+                'message': ''
+            }
+            return Response(response, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk, format=None):
+        try:
+            vinculacion = VinculacionVehiculo.objects.get(id=pk)
+            vinculacion.activo = False
+            vinculacion.save()
+            response = {
+                'content': [],
+                'isOk': True,
+                'message': 'Eliminado correctamente'
+            }
+            return Response(response, status=status.HTTP_200_OK)
+        except VinculacionVehiculo.DoesNotExist:
+            response = {
+                'content': [],
+                'isOk': False,
+                'message': 'Elemento no encontrado'
+            }
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as e:
+            response = {
+                'content': [],
+                'isOk': False,
+                'message': str(e)
+            }
+            return Response(response, status=status.HTTP_200_OK)
 
 
 def getDepartamentos(request):
@@ -417,3 +507,11 @@ def getDataToken(header):
     split_token = header.split(' ')
     payload = jwt.decode(split_token[1], settings.SECRET_KEY)
     return payload
+
+
+def random_string(string_length=10):
+    """Returns a random string of length string_length."""
+    random = str(uuid.uuid4())  # Convert UUID format to a Python string.
+    random = random.upper()  # Make all characters uppercase.
+    random = random.replace("-", "")  # Remove the UUID '-'.
+    return random[0:string_length]  # Return the random string.

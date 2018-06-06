@@ -51,7 +51,7 @@ class Vehiculo(models.Model):
 
 
 class VinculacionVehiculo(models.Model):
-    radicado = models.CharField('Radicado', max_length=8, unique=True)
+    radicado = models.CharField('Radicado', max_length=10, unique=True)
     vehiculo = models.OneToOneField(Vehiculo, related_name='vinculacion_vehiculo', on_delete=models.CASCADE)
     licencia = models.FileField('Licencia', upload_to='vinculacion/licencia', null=True)
     soat = models.FileField('SOAT', upload_to='vinculacion/soat', null=True)
@@ -71,6 +71,7 @@ class VinculacionVehiculo(models.Model):
     rut = models.FileField('RUT', upload_to='vinculacion/rut', null=True)
     antecedentes = models.FileField('Antecendentes', upload_to='vinculacion/antecedetes', null=True)
     fecha_vinculacion = models.DateField('Fecha vinculación', default=datetime.date.today)
+    activo = models.BooleanField('Activo', default=True)
 
     def __str__(self):
         return self.vehiculo.placa
