@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import index, PropietarioAPi, getDepartamentos, VehiculoApi, PropietarioUpdateAPi, \
-    VehiculoUpdateApi, VinculacionApi
+    VehiculoUpdateApi, VinculacionApi, VinculacionDocumentosApi
 
 urlpatterns = [
     path('', index, name='index'),
@@ -13,5 +13,6 @@ urlpatterns = [
     path('api/vehiculo/<str:placa>/', VehiculoUpdateApi.as_view()),
     path('api/vinculacion/', VinculacionApi.as_view()),
     path('api/vinculacion/<int:pk>/', VinculacionApi.as_view()),
+    path('api/vinculacion/documento/', VinculacionDocumentosApi.as_view()),
     path('departamentos/', getDepartamentos),
 ]

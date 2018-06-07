@@ -470,6 +470,14 @@ class VinculacionApi(APIView):
             }
             return Response(response, status=status.HTTP_200_OK)
 
+    def put(self, request, pk, format=None):
+        response = {
+            'content': [],
+            'isOk': True,
+            'message': 'Vehículo vinculado correctamente'
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
     def delete(self, request, pk, format=None):
         try:
             vinculacion = VinculacionVehiculo.objects.get(id=pk)
@@ -495,6 +503,17 @@ class VinculacionApi(APIView):
                 'message': str(e)
             }
             return Response(response, status=status.HTTP_200_OK)
+
+
+class VinculacionDocumentosApi(APIView):
+    def post(self, request, format=None):
+        print(request.data)
+        response = {
+            'content': [],
+            'isOk': True,
+            'message': 'Vehículo vinculado correctamente'
+        }
+        return Response(response, status=status.HTTP_200_OK)
 
 
 def getDepartamentos(request):
