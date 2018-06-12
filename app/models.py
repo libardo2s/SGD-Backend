@@ -4,6 +4,8 @@ from django.db import models
 
 
 # Create your models here.
+
+
 class Persona(models.Model):
     numero_documento = models.IntegerField(unique=True)
     nombres = models.CharField('Nombres', max_length=80)

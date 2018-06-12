@@ -7,6 +7,8 @@ import uuid
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.http import HttpResponse
+from django.utils.dateparse import parse_date
+from django.utils.datetime_safe import datetime
 from django.views.decorators.csrf import csrf_exempt
 
 # RESTFRAMEWORK
@@ -507,13 +509,113 @@ class VinculacionApi(APIView):
 
 class VinculacionDocumentosApi(APIView):
     def post(self, request, format=None):
-        print(request.data)
-        response = {
-            'content': [],
-            'isOk': True,
-            'message': 'Vehículo vinculado correctamente'
-        }
-        return Response(response, status=status.HTTP_200_OK)
+        # print(request.data)
+        tipo = request.data.get('tipo')
+        id_vinculacion = request.data.get('id_vinculacion')
+        img = request.FILES['image']
+        message = ''
+        isOk = True
+        try:
+            vinculacion = VinculacionVehiculo.objects.get(id=id_vinculacion)
+            fecha_vencimiento = request.data.get('fecha_vencimiento')
+            if fecha_vencimiento != '':
+                days = validateDate(fecha_vencimiento)
+            if int(tipo) == 0:
+                if days > 0:
+                    vinculacion.fecha_vencimiento_soat = fecha_vencimiento
+                    vinculacion.soat.save('soat_%s.jpg' % vinculacion.vehiculo.placa, img)
+                    vinculacion.save()
+                    isOk = True
+                    message = 'Información del SOAT almacenada correctamente'
+                else:
+                    isOk = False
+                    message = 'El SOAT se encuentra vencido'
+            elif int(tipo) == 1:
+                if days > 0:
+                    vinculacion.fecha_vencimiento_tecnomecanica = fecha_vencimiento
+                    vinculacion.tecnomecanica.save('tecnomecanica_%s.jpg' % vinculacion.vehiculo.placa, img)
+                    vinculacion.save()
+                    isOk = True
+                    message = 'Información de la revisión Tecnomecánica almacenada correctamente'
+                else:
+                    isOk = False
+                    message = 'La revisión tecnomecánica se encuentra vencida'
+            elif int(tipo) == 2:
+                if days > 0:
+                    vinculacion.fecha_vencimiento_targeta_operacion = fecha_vencimiento
+                    vinculacion.targeta_operacion.save('targeta_operacion_%s.jpg' % vinculacion.vehiculo.placa, img)
+                    vinculacion.save()
+                    isOk = True
+                    message = 'Información de la targeta de operación almacenada correctamente'
+                else:
+                    isOk = False
+                    message = 'La targeta de operación se encuentra vencida'
+            elif int(tipo) == 3:
+                if days > 0:
+                    vinculacion.fecha_vencimiento_seguro_accidente = fecha_vencimiento
+                    vinculacion.seguro_accidente_personal.save('seguro_accidentes_%s.jpg' % vinculacion.vehiculo.placa, img)
+                    vinculacion.save()
+                    isOk = True
+                    message = 'Información del seguro de accidentes personales almacenada correctamente'
+                else:
+                    isOk = False
+                    message = 'El seguro de accidentes personales se encuentra vencido'
+            elif int(tipo) == 4:
+                if days > 0:
+                    vinculacion.fecha_vencimiento_seguro_contractual = fecha_vencimiento
+                    vinculacion.seguro_contractual.save('seguro_contractual_%s.jpg' % vinculacion.vehiculo.placa, img)
+                    vinculacion.save()
+                    isOk = True
+                    message = 'Información del seguro contractual almacenada correctamente'
+                else:
+                    isOk = False
+                    message = 'El seguro contractual se encuentra vencido'
+            elif int(tipo) == 5:
+                if days > 0:
+                    vinculacion.fecha_vencimiento_seguro_extracontractual = fecha_vencimiento
+                    vinculacion.seguro_contractual.save('seguro_extracontractual_%s.jpg' % vinculacion.vehiculo.placa, img)
+                    vinculacion.save()
+                    isOk = True
+                    message = 'Información del seguro extracontractual almacenada correctamente'
+                else:
+                    isOk = False
+                    message = 'El seguro extracontractual se encuentra vencido'
+            elif int(tipo) == 6:
+                vinculacion.revision_preoperacional.save('revision_preoperacional_%s.jpg' % vinculacion.vehiculo.placa, img)
+                vinculacion.save()
+                isOk = True
+                message = 'revision preoperacional almacenada correctamente'
+            elif int(tipo) == 7:
+                vinculacion.rut.save('rut_%s.jpg' % vinculacion.vehiculo.placa,img)
+                vinculacion.save()
+                isOk = True
+                message = 'RUT almacenado correctamente'
+            elif int(tipo) == 8:
+                vinculacion.antecedentes.save('antecedentes_%s.jpg' % vinculacion.vehiculo.placa, img)
+                vinculacion.save()
+                isOk = True
+                message = 'Antecedentes almacenados correctamente'
+
+            response = {
+                'content': [],
+                'isOk': isOk,
+                'message': message
+            }
+            return Response(response, status=status.HTTP_200_OK)
+        except VinculacionVehiculo.DoesNotExist:
+            response = {
+                'content': [],
+                'isOk': False,
+                'message': 'Vinculación no encontrada'
+            }
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as e:
+            response = {
+                'content': [],
+                'isOk': False,
+                'message': str(e)
+            }
+            return Response(response, status=status.HTTP_200_OK)
 
 
 def getDepartamentos(request):
@@ -534,3 +636,9 @@ def random_string(string_length=10):
     random = random.upper()  # Make all characters uppercase.
     random = random.replace("-", "")  # Remove the UUID '-'.
     return random[0:string_length]  # Return the random string.
+
+
+def validateDate(date_str):
+    date = parse_date(date_str)
+    delta = date - datetime.now().date()
+    return delta.days
