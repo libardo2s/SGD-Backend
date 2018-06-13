@@ -573,7 +573,7 @@ class VinculacionDocumentosApi(APIView):
             elif int(tipo) == 5:
                 if days > 0:
                     vinculacion.fecha_vencimiento_seguro_extracontractual = fecha_vencimiento
-                    vinculacion.seguro_contractual.save('seguro_extracontractual_%s.jpg' % vinculacion.vehiculo.placa, img)
+                    vinculacion.seguro_extracontractual.save('seguro_extracontractual_%s.jpg' % vinculacion.vehiculo.placa, img)
                     vinculacion.save()
                     isOk = True
                     message = 'Información del seguro extracontractual almacenada correctamente'
